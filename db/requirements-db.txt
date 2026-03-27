@@ -1,0 +1,4 @@
+## database requirement
+alembic
+sqlmodel
+psycopg2-binary
