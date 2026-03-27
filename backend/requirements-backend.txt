@@ -1,0 +1,7 @@
+## auth requirement
+python-jose[cryptography]
+passlib[bycrypt]
+python-multipart
+pydantic-settings
+fastapi
+
