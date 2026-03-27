@@ -1,0 +1,11 @@
+## database requirement
+alembic
+sqlalchemy
+psycopg2-binary
+
+## auth requirement
+python-jose[cryptography]
+passlib[bycrypt]
+python-multipart
+pydantic-settings
+fastapi
