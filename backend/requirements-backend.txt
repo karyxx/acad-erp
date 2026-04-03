@@ -1,7 +1,11 @@
 ## auth requirement
 python-jose[cryptography]
-passlib[bycrypt]
+passlib[argon2]
 python-multipart
 pydantic-settings
 fastapi
+sqlmodel
+strawberry-graphql[fastapi]
+uvicorn
+psycopg2-binary
 

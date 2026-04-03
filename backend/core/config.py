@@ -16,5 +16,5 @@ def _get_required_env(var_name: str) -> str:
 load_dotenv(".keys")
 
 db_url = _get_required_env("DATABASE_URL")
-    
-
+SECRET_KEY = _get_required_env("SECRET_KEY")
+ALGORITHM = _get_required_env("ALGORITHM")

@@ -1,0 +1,3 @@
+DATABASE_URL=postgresql://postgres:voidashen%40812@localhost:5432/acad_erd
+SECRET_KEY=949f29a8f6a367498c94696ac76c1237
+ALGORITHM=HS256
