@@ -1,4 +1,5 @@
 /.env
-
+*.keys
 /backend/.venv
 db/alembic.ini
+__pycache__/
