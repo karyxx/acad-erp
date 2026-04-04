@@ -1,20 +1,12 @@
-from dotenv import load_dotenv
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class ConfigError(Exception):
-    """Raised when required configuration is missing."""
-    pass
+class Settings(BaseSettings):
+    # Application settings automatically loaded from environment variables or a .keys file.
+    DATABASE_URL: str
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256" 
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    model_config = SettingsConfigDict(env_file=".keys", env_file_encoding="utf-8", extra = "ignore")
 
-def _get_required_env(var_name: str) -> str:
-    value = os.getenv(var_name)
-    if not value:
-        raise ConfigError(f"Missing required environment variable: {var_name}")
-    return value
-
-
-load_dotenv(".keys")
-
-db_url = _get_required_env("DATABASE_URL")
-SECRET_KEY = _get_required_env("SECRET_KEY")
-ALGORITHM = _get_required_env("ALGORITHM")
+settings = Settings()
