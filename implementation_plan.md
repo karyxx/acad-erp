@@ -45,14 +45,13 @@ A modular, scalable Enterprise Resource Planning system for colleges/universitie
 | **Class Schedule View** | Weekly/monthly calendar view with class timings, rooms, faculty | Eliminates scheduling confusion; real-time updates |
 | **Attendance Tracking** | View attendance percentage per course with alerts | Students can self-monitor; reduces proxy issues |
 | **Grade & Result Portal** | View grades, CGPA/SGPA, download transcripts | Instant access to academic records; reduces admin load |
-| **Fee Management** | View fee structure, pending dues, payment history, online payment | Streamlines payments; reduces queues at finance office |
 | **Exam Schedule View** | View exam dates and venue | Ensures timely access to exam information |
 | **Leave/Application System** | Apply for leaves, academic requests with status tracking | Digitizes paper applications; transparent tracking |
 | **Notifications** | Push/email/in-app notifications for deadlines, events | Ensures timely communication; reduces information gaps |
-| **Course & Faculty Feedback** | Anonymous feedback on courses and faculty | Improves teaching quality; structured feedback |
+| **Course & Faculty Feedback** | Fill out external review links (e.g., Google Forms) shared by faculty/admin | Simplified, flexible approach to feedback collection |
 
 #### Role-Based Access (Student)
-- View own data only (grades, attendance, fees)
+- View own data only (grades, attendance)
 - Cannot modify personal details or academic records
 - Can submit applications/requests and feedback
 - Limited to registered courses
@@ -71,6 +70,7 @@ A modular, scalable Enterprise Resource Planning system for colleges/universitie
 | **Gradebook & Assessments** | Enter marks, define grading rubrics, calculate grades | Streamlines evaluation; transparent grading |
 | **Class Schedule View** | Personal teaching schedule with room allocations | Time management; conflict visibility |
 | **Student Performance Analytics** | View class averages, identify at-risk students | Proactive intervention; data-driven teaching |
+| **Feedback Management** | Distribute Google Form links for course and faculty review to students | Streamlined approach for gathering responses |
 
 #### Role-Based Access (Faculty)
 - Full access to assigned course data
@@ -92,7 +92,6 @@ A modular, scalable Enterprise Resource Planning system for colleges/universitie
 | **Department Management** | Manage departments, assign HODs, faculty allocation | Organizational structure management |
 | **Batch & Section Management** | Create batches, sections, assign students | Automated class formation |
 | **Academic Calendar** | Define semesters, holidays, exam periods | Institution-wide schedule coordination |
-| **Fee Structure Management** | Create/modify fee structures, scholarships, discounts | Financial administration |
 | **Exam Management** | Create exams, manage results publication | End-to-end exam lifecycle |
 | **Notification System** | Send notifications visible on student and faculty portals | Direct communication channel |
 | **Audit Logs** | Track all administrative actions | Security; accountability |
@@ -101,8 +100,7 @@ A modular, scalable Enterprise Resource Planning system for colleges/universitie
 
 | Role | Access Level |
 |------|--------------|
-| **Super Admin** | Full system access; all modules and user management |
-| **Account Section** | Fee management, payment records, financial operations |
+| **Super Admin** | Full system access; all modules and user management |ns |
 | **Academic Section** | Course management, exam scheduling, results, academic calendar |
 
 ---
