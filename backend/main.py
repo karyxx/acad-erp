@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlmodel import SQLModel, Session
 from core.database import engine, get_session
-from models.user.schema_gql import schema
+from models import schema
 from strawberry.fastapi import GraphQLRouter
 from auth.auth import router as auth_router
 from typing import Annotated
