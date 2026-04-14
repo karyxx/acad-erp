@@ -1,9 +1,9 @@
 # backend/app/core/database.py
 from sqlmodel import SQLModel, Session, create_engine
 from typing import Generator
-from .config import db_url
+from .config import settings
 
-engine = create_engine(db_url, echo=True)
+engine = create_engine(settings.DATABASE_URL, echo=True)
 
 def get_session() -> Generator[Session, None, None]:
     with Session(engine) as session:
