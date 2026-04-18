@@ -3,7 +3,7 @@
 
 from .identity import Users, Roles, UserRoles
 from .organization import Departments, FacultyProfiles, StudentProfiles
-from .academics import Programs, Semesters, Batches, BatchEnrollments, Courses, CourseOfferings, OfferingFaculty
+from .academics import Programs, Semesters, Batches, BatchEnrollments, Courses, CourseOfferings, OfferingFaculty, SemesterRegistrations, SubjectRegistrations
 from .scheduling import Rooms, TimetableSlots
 from .attendance import AttendanceSessions, AttendanceRecords
 from .assessments import AssessmentComponents, StudentMarks, GradeRules, StudentGrades, StudentSemesterResults
@@ -15,7 +15,7 @@ from .schema_gql import schema
 __all__ = [
     "Users", "Roles", "UserRoles",
     "Departments", "FacultyProfiles", "StudentProfiles",
-    "Programs", "Semesters", "Batches", "BatchEnrollments", "Courses", "CourseOfferings", "OfferingFaculty",
+    "Programs", "Semesters", "Batches", "BatchEnrollments", "Courses", "CourseOfferings", "OfferingFaculty", "SemesterRegistrations", "SubjectRegistrations",
     "Rooms", "TimetableSlots",
     "AttendanceSessions", "AttendanceRecords",
     "AssessmentComponents", "StudentMarks", "GradeRules", "StudentGrades", "StudentSemesterResults",
