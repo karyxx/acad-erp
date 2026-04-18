@@ -1,11 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from sqlmodel import SQLModel, Session
 from core.database import engine, get_session
 from models import schema
 from strawberry.fastapi import GraphQLRouter
-from auth.auth import router as auth_router
+from auth.auth import router as auth_router, get_current_user
 from typing import Annotated
-from auth.auth import get_current_user
+from core.config import settings
+from jose import jwt, JWTError
+from models.identity import Users
 
 app = FastAPI(title="AcadERP API")
 
@@ -14,9 +16,28 @@ app = FastAPI(title="AcadERP API")
 def on_startup():
     SQLModel.metadata.create_all(engine)
 
-# GraphQL context getter to provide database session
-async def get_context(session = Depends(get_session)):
-    return {"session": session}
+# GraphQL context getter to provide database session and user info
+async def get_context(request: Request, session: Session = Depends(get_session)):
+    user_id = None
+    roles = []
+    
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+        else:
+            token = auth_header
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            user_id = payload.get('id')
+            if user_id is not None:
+                user = session.get(Users, user_id)
+                if user:
+                    roles = [link.role.name for link in user.role_links]
+        except JWTError:
+            pass
+
+    return {"session": session, "user_id": user_id, "roles": roles}
 
 # Strawberry GraphQL Router
 graphql_app = GraphQLRouter(schema, context_getter=get_context)

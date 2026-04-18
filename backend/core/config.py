@@ -1,4 +1,8 @@
+import os
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     # Application settings automatically loaded from environment variables or a .keys file.
@@ -7,6 +11,6 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256" 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    model_config = SettingsConfigDict(env_file=".keys", env_file_encoding="utf-8", extra = "ignore")
+    model_config = SettingsConfigDict(env_file=str(BASE_DIR / ".keys"), env_file_encoding="utf-8", extra = "ignore")
 
 settings = Settings()
