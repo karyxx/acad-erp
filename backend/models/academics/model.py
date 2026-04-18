@@ -54,3 +54,18 @@ class OfferingFaculty(SQLModel, table=True):
     offering_id: int = Field(foreign_key="courseofferings.id", primary_key=True)
     faculty_id: int = Field(foreign_key="facultyprofiles.id", primary_key=True)
     role: str = Field(default="instructor")
+
+class SemesterRegistrations(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    student_id: int = Field(foreign_key="studentprofiles.id")
+    semester_id: int = Field(foreign_key="semesters.id")
+    institute_fee_paid: bool = Field(default=False)
+    hostel_fee_paid: bool = Field(default=False)
+    total_credits: float = Field(default=0.0)
+    status: str = Field(default="pending")
+
+class SubjectRegistrations(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    registration_id: int = Field(foreign_key="semesterregistrations.id")
+    course_offering_id: int = Field(foreign_key="courseofferings.id")
+    is_backlog: bool = Field(default=False)
