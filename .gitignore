@@ -3,3 +3,4 @@
 db/alembic.ini
 __pycache__/
 /.vscode/
+.venv/
