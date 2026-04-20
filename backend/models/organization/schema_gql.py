@@ -119,31 +119,6 @@ class OrganizationQuery:
         students = session.exec(select(StudentProfileModel)).all()
         return [StudentProfileType(**s.dict(exclude={"created_at"})) for s in students]
 
-    @strawberry.field(permission_classes=[IsAuthenticated])
-    def get_my_student_profile(self, info: strawberry.Info) -> Optional[StudentProfileType]:
-        """Returns the student profile for the currently logged-in student user."""
-        user_id = info.context["user_id"]
-        session = info.context["session"]
-        student = session.exec(
-            select(StudentProfileModel).where(StudentProfileModel.user_id == user_id)
-        ).first()
-        if student:
-            return StudentProfileType(**student.dict(exclude={"created_at"}))
-        return None
-
-    @strawberry.field(permission_classes=[IsAuthenticated])
-    def get_my_faculty_profile(self, info: strawberry.Info) -> Optional[FacultyProfileType]:
-        """Returns the faculty profile for the currently logged-in faculty user."""
-        user_id = info.context["user_id"]
-        session = info.context["session"]
-        faculty = session.exec(
-            select(FacultyProfileModel).where(FacultyProfileModel.user_id == user_id)
-        ).first()
-        if faculty:
-            return FacultyProfileType(**faculty.dict(exclude={"created_at"}))
-        return None
-
-
 @strawberry.type
 class OrganizationMutation:
     @strawberry.mutation(permission_classes=[IsAuthenticated, IsAdmin])
@@ -204,20 +179,3 @@ class OrganizationMutation:
         session.commit()
         session.refresh(new_student)
         return StudentProfileType(**new_student.dict(exclude={"created_at"}))
-
-    @strawberry.mutation(permission_classes=[IsAuthenticated])
-    def update_target_cgpa(self, info: strawberry.Info, target_cgpa: float) -> Optional[StudentProfileType]:
-        """Allows a logged-in student to update their own target CGPA goal."""
-        user_id = info.context["user_id"]
-        session = info.context["session"]
-        student = session.exec(
-            select(StudentProfileModel).where(StudentProfileModel.user_id == user_id)
-        ).first()
-        if not student:
-            raise Exception("Student profile not found for current user.")
-        student.target_cgpa = target_cgpa
-        session.add(student)
-        session.commit()
-        session.refresh(student)
-        return StudentProfileType(**student.dict(exclude={"created_at"}))
-

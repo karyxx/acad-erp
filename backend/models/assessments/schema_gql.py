@@ -9,7 +9,7 @@ from .model import (
     StudentGrades as StudentGradeModel,
     StudentSemesterResults as StudentSemesterResultModel
 )
-from core.security import IsAuthenticated, IsAdmin, IsFaculty, IsStudent, is_elevated_role, check_user_ownership
+from core.security import IsAuthenticated, IsAdmin, IsFaculty, is_elevated_role, check_user_ownership
 
 @strawberry.type
 class AssessmentComponentType:
@@ -99,38 +99,6 @@ class AssessmentsQuery:
             .where(StudentSemesterResultModel.semester_id == semester_id)
         ).first()
         return StudentSemesterResultType(**result.dict()) if result else None
-
-    @strawberry.field(permission_classes=[IsAuthenticated, IsStudent])
-    def calculate_target_sgpa(self, info: strawberry.Info, student_id: int, target_cgpa: float, next_semester_credits: float) -> Optional[float]:
-        session = info.context["session"]
-        if not is_elevated_role(info):
-            from models.organization.model import StudentProfiles
-            student = session.get(StudentProfiles, student_id)
-            if student:
-                check_user_ownership(info, student.user_id)
-                
-        # Find latest results for student to get current CGPA and Credits
-        results = session.exec(
-            select(StudentSemesterResultModel)
-            .where(StudentSemesterResultModel.student_id == student_id)
-            .order_by(StudentSemesterResultModel.id.desc())
-        ).all()
-        
-        if not results or results[0].cgpa is None or results[0].total_credits_earned is None:
-            # If no history, target SGPA is just target CGPA
-            return target_cgpa
-
-        current_cgpa = results[0].cgpa
-        current_credits = results[0].total_credits_earned
-        
-        if next_semester_credits <= 0:
-            return None
-            
-        total_future_credits = current_credits + next_semester_credits
-        required_points = (target_cgpa * total_future_credits) - (current_cgpa * current_credits)
-        required_sgpa = required_points / next_semester_credits
-        
-        return round(required_sgpa, 2)
 
 @strawberry.type
 class AssessmentsMutation:

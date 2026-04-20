@@ -25,15 +25,6 @@ class MeType:
 @strawberry.type
 class IdentityQuery:
     @strawberry.field(permission_classes=[IsAuthenticated])
-    def get_me(self, info: strawberry.Info) -> MeType:
-        """Returns the currently authenticated user's info and roles."""
-        user_id = info.context["user_id"]
-        roles = info.context.get("roles", [])
-        session = info.context["session"]
-        user = session.get(UserModel, user_id)
-        return MeType(id=user.id, email=user.email, roles=roles)
-
-    @strawberry.field(permission_classes=[IsAuthenticated])
     def get_user(self, info: strawberry.Info, user_id: int) -> Optional[UserType]:
         check_user_ownership(info, user_id)
         session = info.context["session"]

@@ -184,9 +184,9 @@ class AcademicsMutation:
         return ProgramType(**new_program.dict())
 
     @strawberry.mutation(permission_classes=[IsAuthenticated, IsAdmin])
-    def create_semester(self, info: strawberry.Info, program_id: int, number: int, start_date: date, end_date: date, is_current: bool = False, academic_calendar_url: Optional[str] = None, registration_window_start: Optional[datetime] = None, registration_window_end: Optional[datetime] = None) -> SemesterType:
+    def create_semester(self, info: strawberry.Info, program_id: int, number: int, start_date: date, end_date: date, is_current: bool = False, academic_calendar_url: Optional[str] = None) -> SemesterType:
         session = info.context["session"]
-        new_semester = SemesterModel(program_id=program_id, number=number, start_date=start_date, end_date=end_date, is_current=is_current, academic_calendar_url=academic_calendar_url, registration_window_start=registration_window_start, registration_window_end=registration_window_end)
+        new_semester = SemesterModel(program_id=program_id, number=number, start_date=start_date, end_date=end_date, is_current=is_current, academic_calendar_url=academic_calendar_url)
         session.add(new_semester)
         session.commit()
         session.refresh(new_semester)

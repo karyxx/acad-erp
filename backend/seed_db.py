@@ -9,8 +9,7 @@ from models import (
     Departments, FacultyProfiles, StudentProfiles,
     Programs, Semesters, Batches, BatchEnrollments, Courses, CourseOfferings, OfferingFaculty, SemesterRegistrations, SubjectRegistrations,
     Rooms, TimetableSlots,
-    AttendanceSessions, AttendanceRecords,
-    AssessmentComponents, StudentMarks, GradeRules, StudentGrades, StudentSemesterResults,
+    AssessmentComponents, StudentMarks, GradeRules, StudentSemesterResults,
     Exams, ExamSchedules, ExamResults,
     CourseFacultyFeedbackLinks,
     StudentFees
@@ -119,401 +118,119 @@ def seed_db():
     with Session(engine) as session:
         print("Seeding data from institutional records...")
 
-        # ------------------------------------------------------------------ #
         # 1. ROLES
-        # ------------------------------------------------------------------ #
-        role_admin   = Roles(name="Admin",   description="System Administrator")
+        role_admin = Roles(name="Admin", description="System Administrator")
         role_faculty = Roles(name="Faculty", description="Teaching Staff")
         role_student = Roles(name="Student", description="Enrolled Student")
         session.add_all([role_admin, role_faculty, role_student])
         session.commit()
 
-        # ------------------------------------------------------------------ #
-        # 2. DEPARTMENTS
-        # ------------------------------------------------------------------ #
-        dept_cs = Departments(code="CS", name="Computer Science and Engineering")
-        dept_ee = Departments(code="EE", name="Electrical and Electronics Engineering")
-        dept_es = Departments(code="ES", name="Mathematics and Scientific Computing")
-        dept_hs = Departments(code="HS", name="Humanities and Social Sciences")
-        dept_ms = Departments(code="MS", name="Management Studies (BMS)")
-        session.add_all([dept_cs, dept_ee, dept_es, dept_hs, dept_ms])
+        # 2. USERS (Exactly 3)
+        admin_user = Users(email="admin@college.edu", password_hash=pwd_context.hash("password123"), is_active=True)
+        faculty_user = Users(email="faculty@college.edu", password_hash=pwd_context.hash("password123"), is_active=True)
+        student_user = Users(email="student@college.edu", password_hash=pwd_context.hash("password123"), is_active=True)
+        session.add_all([admin_user, faculty_user, student_user])
         session.commit()
 
-        dept_map = {
-            "CS": dept_cs,
-            "EE": dept_ee,
-            "ES": dept_es,
-            "HS": dept_hs,
-            "MS": dept_ms,
-        }
-
-        # ------------------------------------------------------------------ #
-        # 3. ADMIN USER
-        # ------------------------------------------------------------------ #
-        admin_user = Users(
-            email="admin@iiitmg.ac.in",
-            password_hash=pwd_context.hash(DEFAULT_PASSWORD),
-            is_active=True,
-        )
-        session.add(admin_user)
-        session.commit()
+        # Link Roles
         session.add(UserRoles(user_id=admin_user.id, role_id=role_admin.id))
+        session.add(UserRoles(user_id=faculty_user.id, role_id=role_faculty.id))
+        session.add(UserRoles(user_id=student_user.id, role_id=role_student.id))
         session.commit()
 
-        # ------------------------------------------------------------------ #
-        # 4. PROGRAMS & SEMESTERS & BATCH
-        # ------------------------------------------------------------------ #
-        prog_bms = Programs(
-            code="BMS",
-            name="B.Tech. + MBA (Integrated PG in Business Administration)",
-            department_id=dept_ms.id,
-            duration_years=6,
-            degree_type="IPG",
-        )
-        session.add(prog_bms)
+        # 3. DEPARTMENTS & PROGRAMS
+        dept_cse = Departments(code="CSE", name="Computer Science")
+        session.add(dept_cse)
         session.commit()
 
-        # Semester 1 (Aug–Dec 2024, already completed – grades available)
-        sem1 = Semesters(
-            program_id=prog_bms.id,
-            number=1,
-            start_date=date(2024, 8, 1),
-            end_date=date(2024, 12, 15),
-            is_current=False,
-        )
-        # Semester 2 (Jan–Jun 2025, current even semester)
-        sem2 = Semesters(
-            program_id=prog_bms.id,
-            number=2,
-            start_date=date(2025, 1, 1),
-            end_date=date(2025, 6, 15),
-            is_current=True,
-        )
-        session.add_all([sem1, sem2])
+        prog_bcs = Programs(code="BCS", name="B.Tech CS", department_id=dept_cse.id, duration_years=4, degree_type="UG")
+        session.add(prog_bcs)
         session.commit()
 
-        batch_2028 = Batches(
-            program_id=prog_bms.id,
-            name="BMS Class of 2028-30",
-            year=2024,
-            label="BMS-2024",
-        )
-        session.add(batch_2028)
+        sem_1 = Semesters(program_id=prog_bcs.id, number=1, start_date=date(2026, 8, 1), end_date=date(2026, 12, 15), is_current=True)
+        session.add(sem_1)
         session.commit()
 
-        # ------------------------------------------------------------------ #
-        # 5. GRADE RULES
-        # ------------------------------------------------------------------ #
-        for gl, min_p, max_p, gp in GRADE_RULES:
-            session.add(GradeRules(
-                program_id=prog_bms.id,
-                grade_letter=gl,
-                min_percentage=min_p,
-                max_percentage=max_p,
-                grade_point=gp,
-            ))
+        batch_1 = Batches(program_id=prog_bcs.id, name="Class of 2030", year=2026, label="BCS-2026")
+        session.add(batch_1)
         session.commit()
 
-        # ------------------------------------------------------------------ #
-        # 6. FACULTY
-        # ------------------------------------------------------------------ #
-        faculty_profiles = []
-        for emp_id, first, last, title, d_code, email in BMS_FACULTY:
-            f_user = Users(
-                email=email,
-                password_hash=pwd_context.hash(DEFAULT_PASSWORD),
-                is_active=True,
-            )
-            session.add(f_user)
-            session.commit()
-            session.add(UserRoles(user_id=f_user.id, role_id=role_faculty.id))
-
-            f_profile = FacultyProfiles(
-                user_id=f_user.id,
-                employee_id=emp_id,
-                first_name=first,
-                last_name=last,
-                department_id=dept_map[d_code].id,
-                title=title,
-                join_date=date(2015, 7, 1),
-                is_active=True,
-            )
-            session.add(f_profile)
-            session.commit()
-            faculty_profiles.append(f_profile)
-
-        # ------------------------------------------------------------------ #
-        # 7. COURSES (Sem-1 syllabus from Course-of-study.pdf)
-        # ------------------------------------------------------------------ #
-        course_objs = {}
-        for code, name, credits, d_code in BMS_SEM1_COURSES:
-            c = Courses(
-                code=code,
-                name=name,
-                department_id=dept_map[d_code].id,
-                credits=credits,
-                course_type="core",
-            )
-            session.add(c)
-            session.commit()
-            course_objs[code] = c
-
-        total_sem1_credits = sum(cr for _, _, cr, _ in BMS_SEM1_COURSES)  # 23.0
-
-        # ------------------------------------------------------------------ #
-        # 8. COURSE OFFERINGS for Semester 1
-        # ------------------------------------------------------------------ #
-        offering_objs = {}
-        for code, _, _, dept_code in BMS_SEM1_COURSES:
-            offering = CourseOfferings(
-                course_id=course_objs[code].id,
-                semester_id=sem1.id,
-                batch_id=batch_2028.id,
-            )
-            session.add(offering)
-            session.commit()
-            offering_objs[code] = offering
-
-            # Assign faculty
-            fac_idx = COURSE_FACULTY_MAP.get(code[:2], 0)
-            session.add(OfferingFaculty(
-                offering_id=offering.id,
-                faculty_id=faculty_profiles[fac_idx].id,
-                role="instructor",
-            ))
+        # 4. PROFILES
+        faculty_profile = FacultyProfiles(user_id=faculty_user.id, employee_id="FAC001", first_name="John", last_name="Doe", department_id=dept_cse.id, title="Professor")
+        student_profile = StudentProfiles(user_id=student_user.id, roll_number="26BCS001", first_name="Jane", last_name="Smith", department_id=dept_cse.id)
+        session.add_all([faculty_profile, student_profile])
         session.commit()
 
-        # Assessment components for each offering (Midterm 30% + EndSem 70%)
-        assessment_map = {}  # code → (midterm_comp, endsem_comp)
-        for code, offering in offering_objs.items():
-            mid = AssessmentComponents(
-                offering_id=offering.id,
-                name="Mid-Semester Exam",
-                max_marks=100.0,
-                weightage_pct=30.0,
-                conducted_on=date(2024, 10, 14),
-            )
-            end = AssessmentComponents(
-                offering_id=offering.id,
-                name="End-Semester Exam",
-                max_marks=100.0,
-                weightage_pct=70.0,
-                conducted_on=date(2024, 12, 5),
-            )
-            session.add_all([mid, end])
-            session.commit()
-            assessment_map[code] = (mid, end)
-
-        # Rooms
-        room_lt1 = Rooms(code="LT-1", capacity=120)
-        room_lt2 = Rooms(code="LT-2", capacity=120)
-        session.add_all([room_lt1, room_lt2])
+        session.add(BatchEnrollments(student_id=student_profile.id, batch_id=batch_1.id, semester_id=sem_1.id))
         session.commit()
 
-        # Exam setup for Sem-1
-        exam_sem1 = Exams(
-            semester_id=sem1.id,
-            name="End Semester Examination – Odd Semester 2024-25",
-            exam_type="Final",
-            status="completed",
-        )
-        session.add(exam_sem1)
+        # 5. COURSES & OFFERINGS
+        course_1 = Courses(code="CS101", name="Intro to CS", department_id=dept_cse.id, credits=4.0)
+        session.add(course_1)
         session.commit()
 
-        # Exam schedules for each course
-        exam_dates = {
-            "EE101": (date(2024, 12, 5),  time(9, 0),  time(12, 0), room_lt1),
-            "ES101": (date(2024, 12, 7),  time(9, 0),  time(12, 0), room_lt1),
-            "ES102": (date(2024, 12, 9),  time(9, 0),  time(12, 0), room_lt2),
-            "EE102": (date(2024, 12, 11), time(9, 0),  time(12, 0), room_lt2),
-            "CS101": (date(2024, 12, 13), time(9, 0),  time(12, 0), room_lt1),
-            "HS101": (date(2024, 12, 2),  time(14, 0), time(16, 0), room_lt1),
-            "HS102": (date(2024, 12, 3),  time(14, 0), time(16, 0), room_lt2),
-        }
-        exam_sched_map = {}
-        for code, (ex_date, st, et, room) in exam_dates.items():
-            xs = ExamSchedules(
-                exam_id=exam_sem1.id,
-                course_id=course_objs[code].id,
-                room_id=room.id,
-                exam_date=ex_date,
-                start_time=st,
-                end_time=et,
-            )
-            session.add(xs)
-            session.commit()
-            exam_sched_map[code] = xs
-
-        # ------------------------------------------------------------------ #
-        # 9. STUDENTS – all 29 BMS students
-        # ------------------------------------------------------------------ #
-        print(f"  → Seeding {len(BMS_STUDENTS)} students...")
-
-        for roll, first, last, sgpa, cgpa in BMS_STUDENTS:
-            email = _email(first, last, roll)
-            last_name = last if last else first  # handle single-name students
-
-            # User account
-            s_user = Users(
-                email=email,
-                password_hash=pwd_context.hash(DEFAULT_PASSWORD),
-                is_active=True,
-            )
-            session.add(s_user)
-            session.commit()
-            session.add(UserRoles(user_id=s_user.id, role_id=role_student.id))
-
-            # Student profile
-            s_profile = StudentProfiles(
-                user_id=s_user.id,
-                roll_number=roll,
-                first_name=first,
-                last_name=last_name,
-                department_id=dept_ms.id,
-                is_active=True,
-            )
-            session.add(s_profile)
-            session.commit()
-
-            # Batch enrollment
-            session.add(BatchEnrollments(
-                student_id=s_profile.id,
-                batch_id=batch_2028.id,
-                semester_id=sem1.id,
-                status="active",
-            ))
-
-            # Semester registration (Sem-1, approved & fees paid)
-            sem_reg = SemesterRegistrations(
-                student_id=s_profile.id,
-                semester_id=sem1.id,
-                institute_fee_paid=True,
-                hostel_fee_paid=True,
-                total_credits=total_sem1_credits,
-                status="approved",
-            )
-            session.add(sem_reg)
-            session.commit()
-
-            # Subject registrations for every course
-            for code, offering in offering_objs.items():
-                session.add(SubjectRegistrations(
-                    registration_id=sem_reg.id,
-                    course_offering_id=offering.id,
-                    is_backlog=False,
-                ))
-
-            session.commit()
-
-            # ---- Marks & Grades (reverse-engineer from SGPA) ----
-            # We distribute marks so that the weighted average ≈ sgpa*10
-            target_pct = sgpa * 10.0  # e.g. 8.83 → 88.3%
-
-            for code, offering in offering_objs.items():
-                mid_comp, end_comp = assessment_map[code]
-
-                # Small per-course variation (±3%)
-                import random
-                random.seed(hash(roll + code))
-                variation = random.uniform(-3.0, 3.0)
-                course_pct = min(100.0, max(40.0, target_pct + variation))
-
-                # mid: slightly lower than end (students usually score higher in endsem with preparation)
-                mid_pct  = max(35.0, course_pct - 5.0)
-                end_pct  = min(100.0, course_pct + 2.0)
-                total_pct = mid_pct * 0.30 + end_pct * 0.70
-
-                session.add(StudentMarks(
-                    component_id=mid_comp.id,
-                    student_id=s_profile.id,
-                    marks_obtained=round(mid_pct, 1),
-                    is_absent=False,
-                ))
-                session.add(StudentMarks(
-                    component_id=end_comp.id,
-                    student_id=s_profile.id,
-                    marks_obtained=round(end_pct, 1),
-                    is_absent=False,
-                ))
-
-                # Determine grade letter
-                gp = 0.0
-                gl = "F"
-                for letter, min_p, max_p, grade_point in GRADE_RULES:
-                    if min_p <= total_pct <= max_p:
-                        gl = letter
-                        gp = grade_point
-                        break
-
-                sg = StudentGrades(
-                    offering_id=offering.id,
-                    student_id=s_profile.id,
-                    total_marks=round(total_pct, 2),
-                    grade_letter=gl,
-                    grade_point=gp,
-                    is_published=True,
-                    published_at=None,
-                )
-                session.add(sg)
-
-                # Exam result (end-sem marks)
-                session.add(ExamResults(
-                    exam_schedule_id=exam_sched_map[code].id,
-                    student_id=s_profile.id,
-                    marks_obtained=round(end_pct, 1),
-                    is_absent=False,
-                    is_published=True,
-                ))
-
-            # Semester result (use actual grades data)
-            session.add(StudentSemesterResults(
-                student_id=s_profile.id,
-                semester_id=sem1.id,
-                sgpa=sgpa,
-                cgpa=cgpa,
-                total_credits_earned=total_sem1_credits,
-            ))
-
-            # Fee record
-            session.add(StudentFees(
-                student_id=s_profile.id,
-                semester_id=sem1.id,
-                amount=85000.0,
-                status="paid",
-            ))
-
-            session.commit()
-            print(f"    ✓ [{roll}] {first} {last_name}  SGPA={sgpa}")
-
-        # ------------------------------------------------------------------ #
-        # 10. FEEDBACK LINKS – one per course-faculty pair
-        # ------------------------------------------------------------------ #
-        for code, offering in offering_objs.items():
-            fac_idx = COURSE_FACULTY_MAP.get(code[:2], 0)
-            session.add(CourseFacultyFeedbackLinks(
-                offering_id=offering.id,
-                faculty_id=faculty_profiles[fac_idx].id,
-                form_url=f"https://feedback.iiitmg.ac.in/sem1/{code.lower()}",
-                is_active=False,  # Semester 1 feedback closed
-            ))
+        offering_1 = CourseOfferings(course_id=course_1.id, semester_id=sem_1.id, batch_id=batch_1.id)
+        session.add(offering_1)
         session.commit()
 
-        print("\n" + "="*60)
-        print("Database seeded successfully!")
-        print("="*60)
-        print(f"  Admin:    admin@iiitmg.ac.in       / {DEFAULT_PASSWORD}")
-        print(f"  Faculty:  rahul.sharma@iiitmg.ac.in / {DEFAULT_PASSWORD}")
-        print(f"            ananya.verma@iiitmg.ac.in / {DEFAULT_PASSWORD}")
-        print(f"            suresh.gupta@iiitmg.ac.in / {DEFAULT_PASSWORD}")
-        print(f"            priya.nair@iiitmg.ac.in   / {DEFAULT_PASSWORD}")
-        print(f"  Students: <name><num>@iiitmg.ac.in  / {DEFAULT_PASSWORD}")
-        print(f"            e.g. pulkit020@iiitmg.ac.in")
-        print("="*60)
-        print(f"  Program:  BMS (B.Tech + MBA) – 2024 Batch")
-        print(f"  Courses:  {len(BMS_SEM1_COURSES)} × Sem-1 courses  ({total_sem1_credits} credits)")
-        print(f"  Students: {len(BMS_STUDENTS)} (with real SGPA/CGPA from grades file)")
-        print("="*60)
+        session.add(OfferingFaculty(offering_id=offering_1.id, faculty_id=faculty_profile.id, role="instructor"))
+        session.commit()
 
+        # Student registers for semester & course
+        sr = SemesterRegistrations(student_id=student_profile.id, semester_id=sem_1.id, institute_fee_paid=True, hostel_fee_paid=True, total_credits=4.0, status="approved")
+        session.add(sr)
+        session.commit()
+
+        sub_reg = SubjectRegistrations(registration_id=sr.id, course_offering_id=offering_1.id, is_backlog=False)
+        session.add(sub_reg)
+        session.commit()
+
+        # 6. SCHEDULING
+        room_1 = Rooms(code="LT-1", capacity=100)
+        session.add(room_1)
+        session.commit()
+
+        slot_1 = TimetableSlots(offering_id=offering_1.id, room_id=room_1.id, day_of_week=1, start_time=time(10, 0), end_time=time(11, 0), effective_from=date(2026, 8, 1))
+        session.add(slot_1)
+        session.commit()
+
+        # 7. ASSESSMENTS
+        comp_1 = AssessmentComponents(offering_id=offering_1.id, name="Midterm", max_marks=100.0, weightage_pct=30.0)
+        session.add(comp_1)
+        session.commit()
+
+        mark_1 = StudentMarks(component_id=comp_1.id, student_id=student_profile.id, marks_obtained=85.0, is_absent=False)
+        session.add(mark_1)
+        session.commit()
+
+        sem_res = StudentSemesterResults(student_id=student_profile.id, semester_id=sem_1.id, total_credits=4.0, earned_credits=4.0, sgpa=9.0, cgpa=9.0)
+        session.add(sem_res)
+        session.commit()
+
+        # 8. EXAMS
+        exam_1 = Exams(semester_id=sem_1.id, name="Finals", exam_type="Final", status="scheduled")
+        session.add(exam_1)
+        session.commit()
+
+        exam_sched = ExamSchedules(exam_id=exam_1.id, course_id=course_1.id, room_id=room_1.id, exam_date=date(2026, 12, 10), start_time=time(9, 0), end_time=time(12, 0))
+        session.add(exam_sched)
+        session.commit()
+
+        exam_res = ExamResults(exam_schedule_id=exam_sched.id, student_id=student_profile.id, marks_obtained=90.0, is_absent=False, is_published=True)
+        session.add(exam_res)
+        session.commit()
+
+        # 9. FEEDBACK
+        feedback_1 = CourseFacultyFeedbackLinks(offering_id=offering_1.id, faculty_id=faculty_profile.id, form_url="http://forms.abc", is_active=True)
+        session.add(feedback_1)
+        session.commit()
+
+        # 10. FINANCE
+        fee_1 = StudentFees(student_id=student_profile.id, semester_id=sem_1.id, amount=50000.0, status="paid", receipt_url="http://receipts.abc")
+        session.add(fee_1)
+        session.commit()
+
+        print("Database Seeded Successfully with 3 core users and all modules populated!")
 
 if __name__ == "__main__":
     seed_db()
