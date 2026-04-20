@@ -15,9 +15,9 @@ A modular, scalable Enterprise Resource Planning system for colleges/universitie
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Frontend** | React.js | Modern, component-based UI framework |
+| **Frontend** | Next.js | Modern, component-based UI framework |
 | **API Layer** | GraphQL | Flexible, efficient API queries with single endpoint |
-| **Backend** | Node.js + Express | Server runtime with GraphQL integration (Apollo Server) |
+| **Backend** | FastAPI + Strawberry | Server runtime with GraphQL integration (Apollo Server) |
 | **Database** | PostgreSQL | Robust relational database for academic data |
 | **Authentication** | JWT + OAuth 2.0 | Secure token-based auth with SSO support |
 | **Caching** | Redis | Session management and query caching |

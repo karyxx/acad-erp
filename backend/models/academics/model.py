@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import date
+from datetime import date, datetime
 from sqlmodel import SQLModel, Field
 
 class Programs(SQLModel, table=True):
@@ -18,6 +18,8 @@ class Semesters(SQLModel, table=True):
     end_date: date
     academic_calendar_url: Optional[str] = None
     is_current: bool = Field(default=False)
+    registration_window_start: Optional[datetime] = None
+    registration_window_end: Optional[datetime] = None
 
 class Batches(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
