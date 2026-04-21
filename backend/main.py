@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Session
 from core.database import engine, get_session
 from models import schema
@@ -10,6 +11,15 @@ from jose import jwt, JWTError
 from models.identity import Users
 
 app = FastAPI(title="AcadERP API")
+
+# Allow the Next.js frontend to call the backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize database
 @app.on_event("startup")

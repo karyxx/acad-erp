@@ -1,3 +1,4 @@
-DATABASE_URL=postgresql://user:password@localhost:5432/acad_erd
-SECRET_KEY= a str
-ALGORITHM=HS256
+DATABASE_URL="postgresql://username:passwd@localhost:5432/acad_erp"
+SECRET_KEY="ad astra abyssosque"
+ALGORITHM="HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES=30

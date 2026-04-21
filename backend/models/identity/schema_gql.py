@@ -17,6 +17,12 @@ class RoleType:
     description: Optional[str]
 
 @strawberry.type
+class MeType:
+    id: int
+    email: str
+    roles: List[str]
+
+@strawberry.type
 class IdentityQuery:
     @strawberry.field(permission_classes=[IsAuthenticated])
     def get_user(self, info: strawberry.Info, user_id: int) -> Optional[UserType]:

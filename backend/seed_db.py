@@ -5,7 +5,7 @@ from auth.auth import pwd_context
 
 # Import all models
 from models import (
-    Users, Roles, UserRoles, 
+    Users, Roles, UserRoles,
     Departments, FacultyProfiles, StudentProfiles,
     Programs, Semesters, Batches, BatchEnrollments, Courses, CourseOfferings, OfferingFaculty, SemesterRegistrations, SubjectRegistrations,
     Rooms, TimetableSlots,
@@ -15,6 +15,100 @@ from models import (
     StudentFees
 )
 
+# ---------------------------------------------------------------------------
+# DATA EXTRACTED FROM:
+#   Data/bms_students_grades.md   → 29 BMS students with SGPA/CGPA
+#   Data/Course-of-study.pdf      → BMS Sem-1 course list (same as CSE Sem-1)
+# ---------------------------------------------------------------------------
+
+# BMS 2024 Batch – Semester 1 (2024–2028)
+BMS_STUDENTS = [
+    # (roll_no, first_name, last_name, sgpa, cgpa)
+    ("2024BMS-001", "Aksh",              "Pathak",              7.65, 7.65),
+    ("2024BMS-002", "Akshat",            "Tripathi",            9.52, 9.52),
+    ("2024BMS-003", "Ali",               "Samin",               6.91, 6.91),
+    ("2024BMS-004", "Anupam",            "Baraik",              6.65, 6.65),
+    ("2024BMS-005", "Badavath",          "Sachin",              6.91, 6.91),
+    ("2024BMS-006", "Challagondla",      "Rishitha",            7.83, 7.83),
+    ("2024BMS-007", "Govind",            "Suman",               8.87, 8.87),
+    ("2024BMS-008", "Gundlapalli",       "Raj Vardhan",         7.17, 7.17),
+    ("2024BMS-009", "Jiya",              "Virpara",             8.78, 8.78),
+    ("2024BMS-010", "Krishna",           "Soni",                7.78, 7.78),
+    ("2024BMS-011", "Kummari",           "Vikas",               8.00, 8.00),
+    ("2024BMS-012", "Lakshya",           "Mulchandani",         8.65, 8.65),
+    ("2024BMS-013", "Mohnani Meet",      "Deepakkumar",         9.22, 9.22),
+    ("2024BMS-014", "Neelabhro",         "Ghosh",               8.87, 8.87),
+    ("2024BMS-015", "Paila Sai",         "Manjusha",            8.83, 8.83),
+    ("2024BMS-016", "Prapit",            "",                    7.17, 7.17),
+    ("2024BMS-017", "Pratham",           "Jaiswal",             8.04, 8.04),
+    ("2024BMS-018", "Pray",              "Karia",               8.83, 8.83),
+    ("2024BMS-019", "Priyanshu Sanjay",  "Kumar Jha",           7.96, 7.96),
+    ("2024BMS-020", "Pulkit",            "Katariya",            8.83, 8.83),
+    ("2024BMS-021", "Pushkar",           "Agrawal",             7.74, 7.74),
+    ("2024BMS-022", "Rage Renu",         "Yasaswini",           6.65, 6.65),
+    ("2024BMS-023", "Sai Varshith",      "Paluru",              9.00, 9.00),
+    ("2024BMS-024", "Sawant Vedang",     "Amol",                7.83, 7.83),
+    ("2024BMS-025", "Shreyas",           "Patil",               8.30, 8.30),
+    ("2024BMS-026", "Sneh",              "Kansagara",           8.17, 8.17),
+    ("2024BMS-027", "Veeravalli",        "Vinay",               9.13, 9.13),
+    ("2024BMS-028", "Vijit",             "Deogade",             8.43, 8.43),
+    ("2024BMS-029", "Yangoti Nandith",   "Reddy",               8.04, 8.04),
+]
+
+def _email(first: str, last: str, roll: str) -> str:
+    """Generate an institutional email from name components."""
+    slug = (first.split()[0] + last.split()[0] if last else first.split()[0]).lower()
+    slug = slug.replace(" ", "").replace("-", "")
+    num = roll.split("-")[1]  # e.g. '001'
+    return f"{slug}{num}@iiitmg.ac.in"
+
+# ---------------------------------------------------------------------------
+# BMS Semester-1 courses (from Course-of-study.pdf, page 2)
+# These are SHARED with CSE/EE/ES students in first year
+# ---------------------------------------------------------------------------
+BMS_SEM1_COURSES = [
+    # (code, name,                                    credits, dept_code)
+    ("EE101",  "Fundamentals of Electrical and Electronics Engineering", 4.0, "EE"),
+    ("ES101",  "Engineering Physics",                                    4.0, "ES"),
+    ("ES102",  "Engineering Mathematics",                                4.0, "ES"),
+    ("EE102",  "Engineering Design Principles",                          3.0, "EE"),
+    ("CS101",  "Principles of Computer Programming",                     4.0, "CS"),
+    ("HS101",  "Freshman Skills",                                        2.0, "HS"),
+    ("HS102",  "Sports and Physical Education",                          2.0, "HS"),
+]
+
+# Grade rules for BMS program (standard 10-point scale)
+GRADE_RULES = [
+    ("O",  90.0, 100.0, 10.0),
+    ("A+", 80.0,  89.9,  9.0),
+    ("A",  70.0,  79.9,  8.0),
+    ("B+", 60.0,  69.9,  7.0),
+    ("B",  50.0,  59.9,  6.0),
+    ("C",  45.0,  49.9,  5.0),
+    ("P",  40.0,  44.9,  4.0),
+    ("F",   0.0,  39.9,  0.0),
+]
+
+# Faculty for BMS – fabricated but realistic
+BMS_FACULTY = [
+    # (emp_id, first, last, title, dept_code, email)
+    ("FAC-CS-01",  "Rahul",   "Sharma",     "Dr.",  "CS", "rahul.sharma@iiitmg.ac.in"),
+    ("FAC-EE-01",  "Ananya",  "Verma",      "Dr.",  "EE", "ananya.verma@iiitmg.ac.in"),
+    ("FAC-ES-01",  "Suresh",  "Gupta",      "Dr.",  "ES", "suresh.gupta@iiitmg.ac.in"),
+    ("FAC-HS-01",  "Priya",   "Nair",       "Prof.","HS", "priya.nair@iiitmg.ac.in"),
+]
+
+# Map course code prefix → faculty index in BMS_FACULTY
+COURSE_FACULTY_MAP = {
+    "CS":  0,
+    "EE":  1,
+    "ES":  2,
+    "HS":  3,
+}
+
+DEFAULT_PASSWORD = "1234"
+
+
 def seed_db():
     print("Dropping existing tables...")
     SQLModel.metadata.drop_all(engine)
@@ -22,7 +116,7 @@ def seed_db():
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
-        print("Seeding initial data...")
+        print("Seeding data from institutional records...")
 
         # 1. ROLES
         role_admin = Roles(name="Admin", description="System Administrator")

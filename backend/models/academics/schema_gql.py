@@ -1,6 +1,6 @@
 import strawberry
 from typing import Optional, List
-from datetime import date
+from datetime import date, datetime
 from sqlmodel import select
 from .model import (
     Programs as ProgramModel,
@@ -32,6 +32,8 @@ class SemesterType:
     end_date: date
     academic_calendar_url: Optional[str]
     is_current: bool
+    registration_window_start: Optional[datetime]
+    registration_window_end: Optional[datetime]
 
 @strawberry.type
 class BatchType:
