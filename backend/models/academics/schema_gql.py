@@ -172,6 +172,17 @@ class AcademicsQuery:
         srs = session.exec(select(SubjectRegistrationModel).where(SubjectRegistrationModel.registration_id == registration_id)).all()
         return [SubjectRegistrationType(**sr.dict()) for sr in srs]
 
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    def get_my_semester_registrations(self, info: strawberry.Info) -> List[SemesterRegistrationType]:
+        session = info.context["session"]
+        current_user_id = info.context.get("user_id")
+        from models.organization.model import StudentProfiles
+        student = session.exec(select(StudentProfiles).where(StudentProfiles.user_id == current_user_id)).first()
+        if not student:
+            return []
+        regs = session.exec(select(SemesterRegistrationModel).where(SemesterRegistrationModel.student_id == student.id)).all()
+        return [SemesterRegistrationType(**r.dict()) for r in regs]
+
 @strawberry.type
 class AcademicsMutation:
     @strawberry.mutation(permission_classes=[IsAuthenticated, IsAdmin])

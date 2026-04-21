@@ -10,6 +10,8 @@ class AttendanceSessionType:
     id: int
     offering_id: int
     session_date: date
+    start_time: time
+    end_time: time
     conducted_by: int
 
 @strawberry.type
@@ -25,9 +27,28 @@ class LowAttendanceStudent:
 
 @strawberry.type
 class AttendanceQuery:
-    @strawberry.field
-    def session_attendance(self, session_id: int) -> List[AttendanceRecordType]:
-        return []
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    def session_attendance(self, info: strawberry.Info, session_id: int) -> List[AttendanceRecordType]:
+        session = info.context["session"]
+        records = session.exec(select(AttendanceRecords).where(AttendanceRecords.session_id == session_id)).all()
+        return [AttendanceRecordType(id=r.id, student_id=r.student_id, status=r.status) for r in records]
+
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    def get_offering_attendance_sessions(self, info: strawberry.Info, offering_id: int) -> List[AttendanceSessionType]:
+        session = info.context["session"]
+        sessions = session.exec(select(AttendanceSessions).where(AttendanceSessions.offering_id == offering_id)).all()
+        return [AttendanceSessionType(id=s.id, offering_id=s.offering_id, session_date=s.session_date, conducted_by=s.conducted_by) for s in sessions]
+
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    def get_my_attendance_records(self, info: strawberry.Info, student_id: int) -> List[AttendanceRecordType]:
+        session = info.context["session"]
+        if not is_elevated_role(info):
+            from models.organization.model import StudentProfiles
+            student = session.get(StudentProfiles, student_id)
+            if student:
+                check_user_ownership(info, student.user_id)
+        records = session.exec(select(AttendanceRecords).where(AttendanceRecords.student_id == student_id)).all()
+        return [AttendanceRecordType(id=r.id, student_id=r.student_id, status=r.status) for r in records]
 
     @strawberry.field(permission_classes=[IsAuthenticated, IsFaculty])
     def get_low_attendance_students(self, info: strawberry.Info, offering_id: int, threshold_pct: float = 75.0) -> List[LowAttendanceStudent]:

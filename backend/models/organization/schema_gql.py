@@ -112,12 +112,32 @@ class OrganizationQuery:
         return None
 
     @strawberry.field(permission_classes=[IsAuthenticated])
+    def get_my_student_profile(self, info: strawberry.Info) -> Optional[StudentProfileType]:
+        session = info.context["session"]
+        current_user_id = info.context.get("user_id")
+        student = session.exec(select(StudentProfileModel).where(StudentProfileModel.user_id == current_user_id)).first()
+        if student:
+            return StudentProfileType(**student.dict(exclude={"created_at"}))
+        return None
+
+    @strawberry.field(permission_classes=[IsAuthenticated])
     def get_student_profiles(self, info: strawberry.Info) -> List[StudentProfileType]:
         if not is_elevated_role(info):
             raise Exception("Unauthorized: Cannot view all students.")
         session = info.context["session"]
         students = session.exec(select(StudentProfileModel)).all()
         return [StudentProfileType(**s.dict(exclude={"created_at"})) for s in students]
+
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    def get_offering_faculty(self, info: strawberry.Info, offering_id: int) -> List[FacultyProfileType]:
+        session = info.context["session"]
+        from models.academics.model import OfferingFaculty as OfferingFacultyModel
+        assignments = session.exec(select(OfferingFacultyModel).where(OfferingFacultyModel.offering_id == offering_id)).all()
+        faculty_ids = [a.faculty_id for a in assignments]
+        if not faculty_ids:
+            return []
+        faculties = session.exec(select(FacultyProfileModel).where(FacultyProfileModel.id.in_(faculty_ids))).all()
+        return [FacultyProfileType(**f.dict(exclude={"created_at"})) for f in faculties]
 
 @strawberry.type
 class OrganizationMutation:
