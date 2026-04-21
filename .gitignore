@@ -1,5 +1,8 @@
 *.keys
 /backend/.menv
+/backend/.venv
 db/alembic.ini
 __pycache__/
 /.vscode/
+front/node_modules/
+front/.next/
