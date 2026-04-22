@@ -48,6 +48,7 @@ export default function FacultyAttendance() {
   const [selectedCourse, setSelectedCourse] = useState(MOCK_SUMMARY[0])
   const [warningsSent, setWarningsSent] = useState<Set<number>>(new Set())
   const [lowAttendance, setLowAttendance] = useState<LowAttendanceStudent[]>([])
+  const [attDate, setAttDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     if (!token) return
@@ -175,46 +176,92 @@ export default function FacultyAttendance() {
           </div>
         )}
 
-        {/* Full attendance table */}
-        <div className="card overflow-hidden">
-          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              All Students — {selectedCourse.code}
-            </h2>
-            <button className="btn-primary text-sm">
-              <Save size={13} /> Mark Today
-            </button>
-          </div>
-          <table className="erp-table">
-            <thead>
-              <tr>
-                <th>Roll No.</th>
-                <th>Name</th>
-                <th>Sessions Present</th>
-                <th>Attendance %</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedCourse.students.map(s => (
-                <tr key={s.id}>
-                  <td><span className="font-mono text-xs">{s.roll}</span></td>
-                  <td className="font-medium text-sm">{s.name}</td>
-                  <td className="text-sm tabular-nums">{s.sessions}/{selectedCourse.sessions}</td>
-                  <td><AttPill pct={s.pct} /></td>
-                  <td>
-                    {s.pct < 75 ? (
-                      <span className="badge badge-red">At risk</span>
-                    ) : s.pct < 85 ? (
-                      <span className="badge badge-amber">Borderline</span>
-                    ) : (
-                      <span className="badge badge-green">Good</span>
-                    )}
-                  </td>
+        {/* Full attendance table & Daily View */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card overflow-hidden">
+            <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Overall Attendance
+              </h2>
+            </div>
+            <table className="erp-table">
+              <thead>
+                <tr>
+                  <th>Roll No.</th>
+                  <th>Name</th>
+                  <th>Sessions</th>
+                  <th>%</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {selectedCourse.students.map(s => (
+                  <tr key={s.id}>
+                    <td><span className="font-mono text-xs">{s.roll}</span></td>
+                    <td className="font-medium text-sm truncate max-w-[120px]" title={s.name}>{s.name}</td>
+                    <td className="text-sm tabular-nums">{s.sessions}/{selectedCourse.sessions}</td>
+                    <td><AttPill pct={s.pct} /></td>
+                    <td>
+                      {s.pct < 75 ? (
+                        <span className="badge badge-red">At risk</span>
+                      ) : s.pct < 85 ? (
+                        <span className="badge badge-amber">Borderline</span>
+                      ) : (
+                        <span className="badge badge-green">Good</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="card overflow-hidden">
+            <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Daily View
+              </h2>
+              <input 
+                type="date"
+                value={attDate}
+                onChange={e => setAttDate(e.target.value)}
+                className="erp-input text-xs"
+                style={{ padding: '4px 8px', maxWidth: 130 }}
+              />
+            </div>
+            <table className="erp-table">
+              <thead>
+                <tr>
+                  <th>Roll No.</th>
+                  <th>Name</th>
+                  <th>Status on {new Date(attDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedCourse.students.map(s => {
+                  const hash = s.id + new Date(attDate).getDate()
+                  const status = hash % 5 === 0 ? 'Absent' : hash % 7 === 0 ? 'Late' : 'Present'
+                  return (
+                    <tr key={s.id}>
+                      <td><span className="font-mono text-xs">{s.roll}</span></td>
+                      <td className="font-medium text-sm truncate max-w-[120px]" title={s.name}>{s.name}</td>
+                      <td>
+                        <div className="flex items-center gap-1.5 object-contain">
+                          {status === 'Present' ? (
+                            <span className="badge badge-green flex items-center gap-1"><CheckCircle2 size={12}/> Present</span>
+                          ) : status === 'Absent' ? (
+                            <span className="badge badge-red flex items-center gap-1">Absent</span>
+                          ) : (
+                            <span className="badge badge-amber flex items-center gap-1">Late</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </AuthGuard>
