@@ -115,7 +115,7 @@ export default function StudentExams() {
 
       if (foundRegs.length === 0) { setLoading(false); return }
 
-      const semesterIds = [...new Set(foundRegs.map(r => r.semesterId))]
+      const semesterIds = Array.from(new Set(foundRegs.map(r => r.semesterId)))
 
       // 2. Fetch all exams, courses, rooms in parallel
       const examFetches = semesterIds.map(sid =>

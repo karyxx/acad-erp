@@ -328,7 +328,7 @@ export default function StudentCourses() {
       const facultyMap = new Map(facultyRes.getFacultyProfiles.map(f => [f.id, f]))
 
       // 4. For each subject registration, fetch components, marks, and faculty assignments
-      const enrichedList: EnrichedCourse[] = await Promise.all(
+      const enrichedList = await Promise.all(
         allSubRegs.map(async (subReg) => {
           const offering = offeringsMap.get(subReg.courseOfferingId)
           if (!offering) return null
