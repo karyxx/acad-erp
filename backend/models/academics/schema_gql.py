@@ -60,6 +60,7 @@ class CourseOfferingType:
     semester_id: int
     batch_id: int
     syllabus_url: Optional[str]
+    grade_submission_status: str
 
 @strawberry.type
 class OfferingFacultyType:
@@ -271,6 +272,23 @@ class AcademicsMutation:
         session.commit()
         session.refresh(new_sub_reg)
         return SubjectRegistrationType(**new_sub_reg.dict())
+
+    @strawberry.mutation(permission_classes=[IsAuthenticated, IsAdmin])
+    def update_registration_window(self, info: strawberry.Info, semester_id: int, start_date: str, end_date: str) -> SemesterType:
+        session = info.context["session"]
+        semester = session.get(SemesterModel, semester_id)
+        if not semester:
+            raise Exception("Semester not found")
+        from datetime import datetime
+        try:
+            semester.registration_window_start = datetime.strptime(start_date, "%Y-%m-%d").date()
+            semester.registration_window_end = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise Exception("Invalid date format. Please use YYYY-MM-DD")
+        session.add(semester)
+        session.commit()
+        session.refresh(semester)
+        return SemesterType(**semester.dict())
 
     @strawberry.mutation(permission_classes=[IsAuthenticated, IsAdmin])
     def delete_program(self, info: strawberry.Info, id: int) -> bool:

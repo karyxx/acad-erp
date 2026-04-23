@@ -27,6 +27,7 @@ export default function CourseManage({ params }: { params: { offeringId: string 
   const [students, setStudents] = useState(MOCK_STUDENTS)
   const [editingMarks, setEditingMarks] = useState<Record<number, Record<number, number>>>({})
   const [saved, setSaved] = useState(false)
+  const [submissionStatus, setSubmissionStatus] = useState<'pending' | 'submitted' | 'approved' | 'revision_requested'>('pending')
   
   const [components, setComponents] = useState([
     { id: 1, name: 'Quiz 1', max: 20, weightage: 10 },
@@ -59,6 +60,30 @@ export default function CourseManage({ params }: { params: { offeringId: string 
   const handleSaveMarks = async () => {
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
+  }
+
+  const handleSubmitGrades = async () => {
+    if (!token || !confirm('Are you sure you want to submit final grades? You will not be able to edit them after submission.')) return
+    try {
+      const res = await gqlRequest(
+        `mutation SubmitGrades($offeringId: Int!) {
+          submitGrades(offeringId: $offeringId) {
+            success
+            message
+          }
+        }`,
+        { offeringId: parseInt(params.offeringId) },
+        token
+      )
+      if (res.submitGrades?.success) {
+        setSubmissionStatus('submitted')
+      } else {
+        alert(res.submitGrades?.message || 'Error submitting grades')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Network error')
+    }
   }
 
   return (
@@ -279,9 +304,25 @@ export default function CourseManage({ params }: { params: { offeringId: string 
                      <CheckCircle2 size={14} /> Saved
                    </span>
                  )}
-                 <button onClick={handleSaveMarks} disabled={components.length === 0} className="btn-primary">
-                   <Save size={14} /> Save Marks
-                 </button>
+                 {(submissionStatus === 'pending' || submissionStatus === 'revision_requested') && (
+                   <button onClick={handleSaveMarks} disabled={components.length === 0} className="btn-secondary">
+                     <Save size={14} /> Save Marks
+                   </button>
+                 )}
+                 {submissionStatus === 'submitted' && (
+                   <span className="badge" style={{ background: '#EFF6FF', color: '#1D4ED8' }}>Pending Admin Review</span>
+                 )}
+                 {submissionStatus === 'approved' && (
+                   <span className="badge" style={{ background: '#F0FDF4', color: '#15803D' }}>Grades Approved</span>
+                 )}
+                 {(submissionStatus === 'pending' || submissionStatus === 'revision_requested') && (
+                   <button 
+                     onClick={handleSubmitGrades} 
+                     className="btn-primary"
+                   >
+                     Submit Final Grades to Admin
+                   </button>
+                 )}
               </div>
             </div>
 
@@ -317,10 +358,11 @@ export default function CourseManage({ params }: { params: { offeringId: string 
                               onChange={e => handleMarkChange(s.id, comp.id, e.target.value)}
                               className="erp-input tabular-nums font-medium"
                               style={{ width: 90 }}
+                              disabled={submissionStatus === 'submitted' || submissionStatus === 'approved'}
                             />
                           </td>
                           <td>
-                            <input type="checkbox" className="w-4 h-4 rounded cursor-pointer" style={{ accentColor: 'var(--accent)' }} />
+                            <input type="checkbox" className="w-4 h-4 rounded cursor-pointer" style={{ accentColor: 'var(--accent)' }} disabled={submissionStatus === 'submitted' || submissionStatus === 'approved'} />
                           </td>
                         </tr>
                       ))}

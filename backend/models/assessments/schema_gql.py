@@ -114,6 +114,15 @@ class AssessmentsMutation:
     @strawberry.mutation(permission_classes=[IsAuthenticated, IsFaculty])
     def record_student_marks(self, info: strawberry.Info, component_id: int, student_id: int, marks_obtained: Optional[float] = None, is_absent: bool = False, entered_by: Optional[int] = None) -> StudentMarksType:
         session = info.context["session"]
+        
+        # Check if grades are locked
+        component = session.get(AssessmentComponentModel, component_id)
+        if component:
+            from models.academics.model import CourseOfferings
+            offering = session.get(CourseOfferings, component.offering_id)
+            if offering and offering.grade_submission_status in ["submitted", "approved"]:
+                raise Exception("Cannot modify marks: grades have been submitted for review.")
+
         # Allow updating if already exists
         existing_marks = session.exec(
             select(StudentMarksModel)
@@ -148,6 +157,13 @@ class AssessmentsMutation:
     @strawberry.mutation(permission_classes=[IsAuthenticated, IsFaculty])
     def calculate_and_store_grades(self, info: strawberry.Info, offering_id: int, student_id: int, total_marks: float, grade_letter: str, grade_point: float) -> StudentGradeType:
         session = info.context["session"]
+        
+        # Check if grades are locked
+        from models.academics.model import CourseOfferings
+        offering = session.get(CourseOfferings, offering_id)
+        if offering and offering.grade_submission_status in ["submitted", "approved"]:
+            raise Exception("Cannot modify grades: grades have been submitted for review.")
+
         # Simplified manual storage logic
         existing_grade = session.exec(
             select(StudentGradeModel)
@@ -176,6 +192,41 @@ class AssessmentsMutation:
         c = session.get(AssessmentComponentModel, id)
         if c:
             session.delete(c)
+            session.commit()
+            return True
+        return False
+
+    @strawberry.mutation(permission_classes=[IsAuthenticated, IsFaculty])
+    def submit_grades(self, info: strawberry.Info, offering_id: int) -> bool:
+        session = info.context["session"]
+        from models.academics.model import CourseOfferings
+        offering = session.get(CourseOfferings, offering_id)
+        if offering:
+            offering.grade_submission_status = "submitted"
+            session.add(offering)
+            session.commit()
+            return True
+        return False
+
+    @strawberry.mutation(permission_classes=[IsAuthenticated, IsAdmin])
+    def review_grades(self, info: strawberry.Info, offering_id: int, action: str) -> bool:
+        session = info.context["session"]
+        from models.academics.model import CourseOfferings
+        offering = session.get(CourseOfferings, offering_id)
+        if offering:
+            if action == "approve":
+                offering.grade_submission_status = "approved"
+                # Set is_published to True for all student grades in this offering
+                grades = session.exec(select(StudentGradeModel).where(StudentGradeModel.offering_id == offering_id)).all()
+                from datetime import datetime, timezone
+                now = datetime.now(timezone.utc)
+                for grade in grades:
+                    grade.is_published = True
+                    grade.published_at = now
+                    session.add(grade)
+            elif action == "reject":
+                offering.grade_submission_status = "revision_requested"
+            session.add(offering)
             session.commit()
             return True
         return False

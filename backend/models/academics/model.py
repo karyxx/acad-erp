@@ -51,6 +51,7 @@ class CourseOfferings(SQLModel, table=True):
     semester_id: int = Field(foreign_key="semesters.id")
     batch_id: int = Field(foreign_key="batches.id")
     syllabus_url: Optional[str] = None
+    grade_submission_status: str = Field(default="pending")
 
 class OfferingFaculty(SQLModel, table=True):
     offering_id: int = Field(foreign_key="courseofferings.id", primary_key=True)
