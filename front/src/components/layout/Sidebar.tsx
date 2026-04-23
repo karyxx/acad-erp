@@ -85,10 +85,7 @@ function getNavSections(role: UserRole, basePath: string): NavSection[] {
       label: 'Academics',
       items: [
         { href: `${basePath}`, label: 'Overview', icon: <LayoutDashboard size={15} /> },
-        { href: `${basePath}/students`, label: 'Students', icon: <GraduationCap size={15} /> },
-        { href: `${basePath}/faculty`, label: 'Faculty', icon: <Users size={15} /> },
         { href: `${basePath}/courses`, label: 'Courses', icon: <BookOpen size={15} /> },
-        { href: `${basePath}/timetable`, label: 'Timetable', icon: <Calendar size={15} /> },
       ],
     },
     {
@@ -97,14 +94,13 @@ function getNavSections(role: UserRole, basePath: string): NavSection[] {
         { href: `${basePath}/registrations`, label: 'Registrations', icon: <ClipboardList size={15} /> },
         { href: `${basePath}/assessments`, label: 'Assessments', icon: <BarChart3 size={15} /> },
         { href: `${basePath}/examinations`, label: 'Examinations', icon: <FileText size={15} /> },
+        { href: `${basePath}/feedback`, label: 'Feedback', icon: <ClipboardList size={15} /> },
       ],
     },
     {
       label: 'Admin',
       items: [
         { href: `${basePath}/finance`, label: 'Finance', icon: <DollarSign size={15} /> },
-        { href: `${basePath}/access`, label: 'Access & Roles', icon: <Shield size={15} /> },
-        { href: `${basePath}/departments`, label: 'Departments', icon: <Building2 size={15} /> },
       ],
     },
   ]
