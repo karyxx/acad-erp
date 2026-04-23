@@ -360,13 +360,16 @@ export default function StudentRegistration() {
               return (
                 <div className="flex items-start gap-3 px-4 py-3.5 rounded-lg" style={{ background: '#F0FDF4', border: '1px solid #86EFAC' }}>
                   <CheckCircle size={16} style={{ color: '#15803D', marginTop: 1 }} />
-                  <div className="text-sm">
+                  <div className="text-sm flex-1">
                     <span className="font-semibold" style={{ color: '#166534' }}>Registration window is open. </span>
                     <span style={{ color: '#15803D' }}>
                       You can register for next semester courses until{' '}
                       {end ? end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'further notice'}.
                     </span>
                   </div>
+                  <button className="btn-primary" onClick={() => alert('Initiating registration workflow...')}>
+                    <Plus size={16} /> Register Now
+                  </button>
                 </div>
               )
             }

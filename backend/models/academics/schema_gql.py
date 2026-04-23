@@ -274,18 +274,17 @@ class AcademicsMutation:
         return SubjectRegistrationType(**new_sub_reg.dict())
 
     @strawberry.mutation(permission_classes=[IsAuthenticated, IsAdmin])
-    def toggle_registration_window(self, info: strawberry.Info, semester_id: int, open: bool) -> SemesterType:
+    def update_registration_window(self, info: strawberry.Info, semester_id: int, start_date: str, end_date: str) -> SemesterType:
         session = info.context["session"]
         semester = session.get(SemesterModel, semester_id)
         if not semester:
             raise Exception("Semester not found")
-        from datetime import datetime, timezone
-        now = datetime.now(timezone.utc)
-        if open:
-            semester.registration_window_start = now
-            semester.registration_window_end = None
-        else:
-            semester.registration_window_end = now
+        from datetime import datetime
+        try:
+            semester.registration_window_start = datetime.strptime(start_date, "%Y-%m-%d").date()
+            semester.registration_window_end = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise Exception("Invalid date format. Please use YYYY-MM-DD")
         session.add(semester)
         session.commit()
         session.refresh(semester)

@@ -118,6 +118,7 @@ def seed_db():
 
     with Session(engine) as session:
         print("Seeding data...")
+        import random
 
         # 1. ROLES
         role_admin = Roles(name="Admin", description="System Administrator")
@@ -171,10 +172,8 @@ def seed_db():
         session.commit()
 
         # 4. PROFILES
-        # Faculty profiles for each dept
         faculty_profiles = []
         for i, (code, dept) in enumerate(depts.items()):
-            # Create a user for each faculty
             email = f"faculty_{code.lower()}@college.edu"
             u = Users(email=email, password_hash=pwd_context.hash("password123"), is_active=True)
             session.add(u)
@@ -194,32 +193,78 @@ def seed_db():
         session.add_all(faculty_profiles)
         session.commit()
 
+        bms_faculty_profiles = []
+        for emp_id, first, last, title, dept_code, fac_email in BMS_FACULTY:
+            fac_u = Users(email=fac_email, password_hash=pwd_context.hash("password123"), is_active=True)
+            session.add(fac_u)
+            session.commit()
+            session.add(UserRoles(user_id=fac_u.id, role_id=role_faculty.id))
+            session.commit()
+            bfp = FacultyProfiles(
+                user_id=fac_u.id,
+                employee_id=emp_id,
+                first_name=first,
+                last_name=last,
+                department_id=depts[dept_code].id,
+                title=title
+            )
+            bms_faculty_profiles.append(bfp)
+        session.add_all(bms_faculty_profiles)
+        session.commit()
+
+        bms_student_profiles = []
+        for roll, first, last, sgpa, cgpa in BMS_STUDENTS:
+            email = _email(first, last, roll)
+            stu_u = Users(email=email, password_hash=pwd_context.hash(DEFAULT_PASSWORD), is_active=True)
+            session.add(stu_u)
+            session.commit()
+            session.add(UserRoles(user_id=stu_u.id, role_id=role_student.id))
+            session.commit()
+
+            sp = StudentProfiles(
+                user_id=stu_u.id,
+                roll_number=roll,
+                first_name=first,
+                last_name=last,
+                department_id=depts["CS"].id,
+                target_cgpa=8.0
+            )
+            bms_student_profiles.append(sp)
+        session.add_all(bms_student_profiles)
+        session.commit()
+
         student_profile = StudentProfiles(
-            user_id=student_user.id, 
-            roll_number="26BCS001", 
-            first_name="Jane", 
-            last_name="Smith", 
+            user_id=student_user.id,
+            roll_number="26BCS001",
+            first_name="Jane",
+            last_name="Smith",
             department_id=depts["CS"].id,
             target_cgpa=8.5
         )
         session.add(student_profile)
         session.commit()
+        all_students = bms_student_profiles + [student_profile]
 
-        session.add(BatchEnrollments(student_id=student_profile.id, batch_id=batch_1.id, semester_id=sem_1.id))
+        for sp in all_students:
+            session.add(BatchEnrollments(student_id=sp.id, batch_id=batch_1.id, semester_id=sem_1.id))
         session.commit()
 
-        # 5. COURSES & OFFERINGS
-        courses_data = [
-            ("CS101", "Principles of Computer Programming", 4.0, "CS"),
-            ("EE101", "Fundamentals of Electrical Engineering", 4.0, "EE"),
-            ("ES101", "Engineering Physics", 4.0, "ES"),
-            ("ES102", "Engineering Mathematics", 4.0, "ES"),
-            ("HS101", "Freshman Skills", 2.0, "HS"),
-            ("CS102", "Digital Logic Design", 3.0, "CS"),
-        ]
+        # 5. GRADE RULES
+        grade_rule_objs = []
+        for g_grade, g_min, g_max, g_points in GRADE_RULES:
+            grade_rule_objs.append(GradeRules(
+                program_id=prog_bcs.id,
+                grade_letter=g_grade, 
+                min_percentage=g_min, 
+                max_percentage=g_max, 
+                grade_point=g_points
+            ))
+        session.add_all(grade_rule_objs)
+        session.commit()
 
+        # 6. COURSES & OFFERINGS
         courses = []
-        for code, name, credits, dept_prefix in courses_data:
+        for code, name, credits, dept_prefix in BMS_SEM1_COURSES:
             c = Courses(code=code, name=name, department_id=depts[dept_prefix].id, credits=credits, course_type="core")
             courses.append(c)
         session.add_all(courses)
@@ -233,44 +278,45 @@ def seed_db():
         session.commit()
 
         for i, off in enumerate(offerings):
-            # Assign faculty based on dept
             dept_code = courses[i].code[:2]
             if dept_code not in ["CS", "EE", "ES", "HS"]: dept_code = "CS"
-            faculty = next(f for f in faculty_profiles if f.first_name.endswith(dept_code))
+            fac_idx = COURSE_FACULTY_MAP.get(dept_code, 0)
+            faculty = bms_faculty_profiles[fac_idx]
             session.add(OfferingFaculty(offering_id=off.id, faculty_id=faculty.id, role="instructor"))
         session.commit()
 
-        # Student registers for semester
-        sr = SemesterRegistrations(
-            student_id=student_profile.id, 
-            semester_id=sem_1.id, 
-            institute_fee_paid=True, 
-            hostel_fee_paid=True, 
-            total_credits=sum(c.credits for c in courses), 
-            status="approved"
-        )
-        session.add(sr)
-        session.commit()
+        # 7. REGISTRATIONS
+        for sp in all_students:
+            sr = SemesterRegistrations(
+                student_id=sp.id, 
+                semester_id=sem_1.id, 
+                institute_fee_paid=True, 
+                hostel_fee_paid=True, 
+                total_credits=sum(c.credits for c in courses), 
+                status="approved"
+            )
+            session.add(sr)
+            session.commit()
 
-        for off in offerings:
-            sub_reg = SubjectRegistrations(registration_id=sr.id, course_offering_id=off.id, is_backlog=False)
-            session.add(sub_reg)
-        session.commit()
+            for off in offerings:
+                sub_reg = SubjectRegistrations(registration_id=sr.id, course_offering_id=off.id, is_backlog=False)
+                session.add(sub_reg)
+            session.commit()
 
-        # 6. SCHEDULING (Timetable)
+        # 8. SCHEDULING (Timetable) & ROOMS
         rooms = [
             Rooms(code="LT-1", capacity=100, building="Admin Block"),
             Rooms(code="LT-2", capacity=100, building="Admin Block"),
+            Rooms(code="LT-3", capacity=100, building="Admin Block"),
             Rooms(code="Lab-1", capacity=50, building="CS Block"),
+            Rooms(code="Lab-2", capacity=50, building="EE Block"),
         ]
         session.add_all(rooms)
         session.commit()
 
-        # Mon-Fri schedule
         for day in range(1, 6):
             for i, off in enumerate(offerings):
-                # Simple rotation: course i on day d at time 9+i
-                if (i + day) % 2 == 0: # Only some days for each course
+                if (i + day) % 2 == 0:
                     slot = TimetableSlots(
                         offering_id=off.id, 
                         room_id=rooms[i % len(rooms)].id, 
@@ -282,29 +328,9 @@ def seed_db():
                     session.add(slot)
         session.commit()
 
-        # 7. ATTENDANCE
-        import random
-        for off in offerings:
-            # Create 10 sessions for each course
-            for d in range(1, 11):
-                sess = AttendanceSessions(
-                    offering_id=off.id,
-                    session_date=date(2026, 8, d + 10),
-                    start_time=time(9, 0),
-                    end_time=time(10, 0),
-                    conducted_by=faculty_profiles[0].id # Simplified
-                )
-                session.add(sess)
-                session.commit()
-
-                # Record for our student
-                status = "Present" if random.random() > 0.15 else "Absent"
-                rec = AttendanceRecords(session_id=sess.id, student_id=student_profile.id, status=status)
-                session.add(rec)
-        session.commit()
-
-        # 8. ASSESSMENTS & MARKS
-        for off in offerings:
+        # 9. ATTENDANCE & MARKS
+        for i, off in enumerate(offerings):
+            # Assessment components
             comps = [
                 AssessmentComponents(offering_id=off.id, name="Assignment 1", max_marks=20.0, weightage_pct=10.0),
                 AssessmentComponents(offering_id=off.id, name="Quiz 1", max_marks=30.0, weightage_pct=15.0),
@@ -313,13 +339,46 @@ def seed_db():
             session.add_all(comps)
             session.commit()
 
-            for comp in comps:
-                # Random but good marks
-                marks = random.uniform(comp.max_marks * 0.6, comp.max_marks * 0.95)
-                session.add(StudentMarks(component_id=comp.id, student_id=student_profile.id, marks_obtained=round(marks, 1), is_absent=False))
+            # Feedback links
+            # Get the faculty assigned to this offering
+            offering_faculty = next((of for of in session.query(OfferingFaculty).filter(OfferingFaculty.offering_id == off.id).all()), None)
+            fac_id = offering_faculty.faculty_id if offering_faculty else bms_faculty_profiles[0].id
+            
+            session.add(CourseFacultyFeedbackLinks(
+                offering_id=off.id,
+                faculty_id=fac_id,
+                form_url="https://forms.gle/sampleformlink",
+                is_active=True
+            ))
+            session.commit()
+
+            # Attendance sessions
+            sessions_list = []
+            for d in range(1, 11):
+                sess = AttendanceSessions(
+                    offering_id=off.id,
+                    session_date=date(2026, 8, d + 10),
+                    start_time=time(9, 0),
+                    end_time=time(10, 0),
+                    conducted_by=bms_faculty_profiles[0].id
+                )
+                sessions_list.append(sess)
+            session.add_all(sessions_list)
+            session.commit()
+
+            for sp in all_students:
+                # Attendance
+                for sess in sessions_list:
+                    status = "Present" if random.random() > 0.15 else "Absent"
+                    session.add(AttendanceRecords(session_id=sess.id, student_id=sp.id, status=status))
+
+                # Marks
+                for comp in comps:
+                    marks = random.uniform(comp.max_marks * 0.6, comp.max_marks * 0.95)
+                    session.add(StudentMarks(component_id=comp.id, student_id=sp.id, marks_obtained=round(marks, 1), is_absent=False))
         session.commit()
 
-        # 9. EXAMS
+        # 10. EXAMS
         exam_main = Exams(semester_id=sem_1.id, name="End-Sem Dec 2026", exam_type="Final", status="scheduled")
         session.add(exam_main)
         session.commit()
@@ -334,24 +393,45 @@ def seed_db():
                 end_time=time(12, 0)
             )
             session.add(exam_sched)
+            session.commit()
+
+            for sp in all_students:
+                marks = random.uniform(50.0, 95.0)
+                session.add(ExamResults(
+                    exam_schedule_id=exam_sched.id,
+                    student_id=sp.id,
+                    marks_obtained=round(marks, 1),
+                    status="Present"
+                ))
+        session.commit()
+
+        # 11. FEES
+        for sp in all_students:
+            fee1 = StudentFees(student_id=sp.id, semester_id=sem_1.id, fee_type="Tuition", amount=120000.0, due_date=date(2026, 8, 15), status="paid")
+            fee2 = StudentFees(student_id=sp.id, semester_id=sem_1.id, fee_type="Hostel", amount=35000.0, due_date=date(2026, 8, 15), status="paid" if random.random() > 0.1 else "pending")
+            session.add_all([fee1, fee2])
         session.commit()
 
         # Previous Semester Results (for CGPA testing)
         sem_0 = Semesters(program_id=prog_bcs.id, number=0, start_date=date(2026, 1, 1), end_date=date(2026, 5, 15), is_current=False)
         session.add(sem_0)
         session.commit()
+
+        # Populate StudentSemesterResults based on their true SGPA/CGPA from data
+        for sp in bms_student_profiles:
+            matching_student = next((s for s in BMS_STUDENTS if s[0] == sp.roll_number), None)
+            if matching_student:
+                _, _, _, sgpa, cgpa = matching_student
+                sem_res = StudentSemesterResults(student_id=sp.id, semester_id=sem_1.id, sgpa=sgpa, cgpa=cgpa, total_credits_earned=23.0)
+                session.add(sem_res)
         
+        # Jane Smith
         sem_res_0 = StudentSemesterResults(student_id=student_profile.id, semester_id=sem_0.id, sgpa=8.2, cgpa=8.2, total_credits_earned=18.0)
-        session.add(sem_res_0)
-        
-        sem_res_1 = StudentSemesterResults(student_id=student_profile.id, semester_id=sem_1.id, sgpa=8.8, cgpa=8.5, total_credits_earned=18.0)
-        session.add(sem_res_1)
+        sem_res_1 = StudentSemesterResults(student_id=student_profile.id, semester_id=sem_1.id, sgpa=8.8, cgpa=8.5, total_credits_earned=23.0)
+        session.add_all([sem_res_0, sem_res_1])
         session.commit()
 
         print("Database Seeded Successfully with rich test data!")
-
-if __name__ == "__main__":
-    seed_db()
 
 if __name__ == "__main__":
     seed_db()

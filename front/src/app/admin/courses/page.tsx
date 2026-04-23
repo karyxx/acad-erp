@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import AuthGuard from '@/components/layout/AuthGuard'
 import TopBar from '@/components/layout/TopBar'
-import { BookOpen, Search, Plus, Filter } from 'lucide-react'
+import { BookOpen, Search, Plus, Filter, X } from 'lucide-react'
 
 const MOCK_COURSES = [
   { id: 1, code: 'CS601', name: 'Compiler Design', dept: 'CSE', credits: 4, type: 'core' },
@@ -16,8 +16,17 @@ const MOCK_COURSES = [
 export default function AdminCourses() {
   const [courses, setCourses] = useState(MOCK_COURSES)
   const [search, setSearch] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [newCourse, setNewCourse] = useState({ code: '', name: '', dept: 'CSE', credits: 4, type: 'core' })
 
   const filtered = courses.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase()))
+
+  const handleAddCourse = (e: React.FormEvent) => {
+    e.preventDefault()
+    setCourses([...courses, { ...newCourse, id: Date.now() }])
+    setShowModal(false)
+    setNewCourse({ code: '', name: '', dept: 'CSE', credits: 4, type: 'core' })
+  }
 
   return (
     <AuthGuard requiredRole="Admin">
@@ -28,7 +37,7 @@ export default function AdminCourses() {
             <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Academic Lifecycle</h1>
             <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Manage courses, programs, and curriculum updates.</p>
           </div>
-          <button className="btn-primary">
+          <button className="btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={16} /> New Course
           </button>
         </div>
@@ -82,6 +91,56 @@ export default function AdminCourses() {
           </table>
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Add New Course</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleAddCourse} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Course Code</label>
+                <input required type="text" className="erp-input w-full" value={newCourse.code} onChange={e => setNewCourse({...newCourse, code: e.target.value})} placeholder="e.g. CS605" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Course Name</label>
+                <input required type="text" className="erp-input w-full" value={newCourse.name} onChange={e => setNewCourse({...newCourse, name: e.target.value})} placeholder="e.g. Machine Learning" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Department</label>
+                  <select className="erp-input w-full" value={newCourse.dept} onChange={e => setNewCourse({...newCourse, dept: e.target.value})}>
+                    <option value="CSE">CSE</option>
+                    <option value="EE">EE</option>
+                    <option value="MA">MA</option>
+                    <option value="HS">HS</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Credits</label>
+                  <input required type="number" min="1" max="6" className="erp-input w-full" value={newCourse.credits} onChange={e => setNewCourse({...newCourse, credits: parseInt(e.target.value)})} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Course Type</label>
+                <select className="erp-input w-full" value={newCourse.type} onChange={e => setNewCourse({...newCourse, type: e.target.value})}>
+                  <option value="core">Core</option>
+                  <option value="elective">Elective</option>
+                  <option value="lab">Lab</option>
+                </select>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Add Course</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AuthGuard>
   )
 }
