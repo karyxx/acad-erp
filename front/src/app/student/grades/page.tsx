@@ -138,7 +138,7 @@ export default function StudentGrades() {
       const marksById = new Map(marksRes.getStudentMarks.map(m => [m.componentId, m]))
 
       // 3. For each semester registration, get results and subject details
-      const enriched: EnrichedSemResult[] = await Promise.all(
+      const enriched = await Promise.all(
         foundRegs.map(async reg => {
           const semester = semMap.get(reg.semesterId)
           if (!semester) return null

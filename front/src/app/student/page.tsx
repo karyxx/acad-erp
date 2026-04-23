@@ -107,7 +107,7 @@ export default function StudentOverview() {
       ).catch(() => ({ getMySemesterRegistrations: [] }))
       const foundRegs = regsRes.getMySemesterRegistrations
 
-      const semesterIds = [...new Set(foundRegs.map(r => r.semesterId))]
+      const semesterIds = Array.from(new Set(foundRegs.map(r => r.semesterId)))
 
       // Parallel fetches
       const [feesRes, semestersRes, coursesRes, offeringsRes] = await Promise.all([

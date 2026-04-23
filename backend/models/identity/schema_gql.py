@@ -53,6 +53,14 @@ class IdentityQuery:
         roles = session.exec(select(RoleModel)).all()
         return [RoleType(id=r.id, name=r.name, description=r.description) for r in roles]
 
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    def get_me(self, info: strawberry.Info) -> Optional[MeType]:
+        user = info.context["user"]
+        if not user:
+            return None
+        # user dictionary contains sub (email), roles (list of strings), id (int)
+        return MeType(id=user.get("id", 0), email=user.get("sub", ""), roles=user.get("roles", []))
+
 @strawberry.type
 class IdentityMutation:
     @strawberry.mutation

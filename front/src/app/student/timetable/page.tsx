@@ -375,7 +375,7 @@ export default function StudentTimetable() {
 
             {/* Legend */}
             <div className="flex flex-wrap gap-2">
-              {[...courseColorMap.entries()].map(([courseId, colorIdx]) => {
+              {Array.from(courseColorMap.entries()).map(([courseId, colorIdx]) => {
                 const course = slots.find(s => s.course.id === courseId)?.course
                 if (!course) return null
                 const col = SLOT_COLORS[colorIdx]
