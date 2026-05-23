@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  # 1. The Database Service
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: acad_user
+      POSTGRES_PASSWORD: supersecret
+      POSTGRES_DB: acad_erp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # This ensures your database data isn't lost when the container stops
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. The FastAPI Backend Service
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://acad_user:supersecret@db:5432/acad_erp_db
+      - SECRET_KEY=my_super_secret_dev_key_12345
+
+  # 3. The Next.js Frontend Service
+  frontend:
+    build:
+      context: ./front
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      # Tell the frontend where the backend API lives
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+volumes:
+  postgres_data:
